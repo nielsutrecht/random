@@ -4,6 +4,9 @@ package imageload;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static testhelper.TestHelper.countTestCases;
+import static testhelper.TestHelper.gcAndSleep;
+
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
@@ -11,8 +14,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -32,7 +33,7 @@ import com.google.common.io.Files;
 public class PictureToolPerfTest {
     private static final long TEST_DURATION = 10000; //Test duration in ms
     private static final long WARMUP_DURATION = 2000; //Warmup time in ms
-    private static final long SLEEP_DURATION = 1000; //Sleep duration
+    private static final int SLEEP_DURATION = 1000; //Sleep duration
     private static List<byte[]> _images;
     private static List<Properties> _properties;
     private static long testStart;
@@ -60,7 +61,8 @@ public class PictureToolPerfTest {
             _properties.add(props);
         }
 
-        final int count = countTestCases();
+        final int count = countTestCases(PictureToolPerfTest.class);
+
         final double time = (double) count * (double) (TEST_DURATION + WARMUP_DURATION + SLEEP_DURATION) / 1000.0;
 
         //This breaks if not all test cases use the sleep, warmup and test durations.
@@ -73,21 +75,6 @@ public class PictureToolPerfTest {
     public static void printTime() {
         final long duration = System.currentTimeMillis() - testStart;
         System.out.println(String.format("Performed %s tests in %.2f seconds.", tests, duration / 1000.0));
-    }
-
-    private static int countTestCases() {
-        final Method[] methods = PictureToolPerfTest.class.getMethods();
-        int count = 0;
-        for (final Method m : methods) {
-            final Annotation[] annotations = m.getDeclaredAnnotations();
-            for (final Annotation a : annotations) {
-                if (a.annotationType() == Test.class) {
-                    count++;
-                }
-            }
-        }
-
-        return count;
     }
 
     @AfterClass
@@ -221,7 +208,7 @@ public class PictureToolPerfTest {
         tests++;
         Dimension dim = null;
 
-        sleep();
+        gcAndSleep(SLEEP_DURATION);
 
         //First test for correct results.
         System.out.print("Sanity...");
@@ -276,7 +263,7 @@ public class PictureToolPerfTest {
         tests++;
         BufferedImage image = null;
 
-        sleep();
+        gcAndSleep(SLEEP_DURATION);
 
         //First test for correct results.
         System.out.print("Sanity...");
@@ -327,7 +314,7 @@ public class PictureToolPerfTest {
         final int height = 200;
         long bytes = 0;
 
-        sleep();
+        gcAndSleep(SLEEP_DURATION);
 
         final ImageReader reader = new ImageReader() {
             @Override
@@ -374,16 +361,6 @@ public class PictureToolPerfTest {
             duration = System.currentTimeMillis() - start;
         }
         outputDuration(duration, bytes * iterations);
-    }
-
-    private void sleep() {
-        System.gc();
-        try {
-            Thread.sleep(SLEEP_DURATION);
-        }
-        catch (final InterruptedException e) {
-
-        }
     }
 
     private void outputDuration(final long duration, final long bytesRead) {
